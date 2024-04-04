@@ -40,19 +40,29 @@
         e.preventDefault();
 
         const formData = new FormData();
-        formData.append('image', fileInput.files[0]);
+        formData.append('file', fileInput.files[0]);
 
         try {
             const response = await fetch('/upload', {
                 method: 'POST',
-                body: formData
+                body: formData,
             });
-            const data = await response.json();
-            console.log(data);
-            if (data.success) {
-                imagePreview.innerHTML = `<img src="${data.imageUrl}" alt="Uploaded Image">`;
+
+            if (response.ok) {
+                const contentType = response.headers.get("Content-Type");
+                if (contentType && contentType.includes("application/json")) {
+                    response.json().then(data => {
+                        if (data.success) {
+                            imagePreview.innerHTML = `<img src="${data.imageUrl}" alt="Uploaded Image">`;
+                        } else {
+                            throw new Error('이미지 업로드에 실패했습니다.');
+                        }
+                    });
+                } else {
+                    throw new Error('서버로부터 JSON이 아닌 응답이 반환되었습니다.');
+                }
             } else {
-                alert('이미지 업로드에 실패했습니다.');
+                throw new Error('서버 에러');
             }
         } catch (error) {
             console.error('에러 발생:', error);
